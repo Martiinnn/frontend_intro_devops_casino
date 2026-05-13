@@ -147,3 +147,37 @@ para los criterios completos.
 ## Repositorio del backend
 
 [`casino-backend`](../casino-backend)
+
+---
+
+## CI/CD (GitHub Actions) - Rama `deploy`
+
+Este repositorio incluye el workflow:
+
+- `.github/workflows/deploy.yml`
+
+Se ejecuta automaticamente con `push` a la rama `deploy` y sigue 3 etapas:
+
+1. Build de imagen Docker.
+2. Push al registry (Docker Hub).
+3. Deploy automatico en EC2 por SSH.
+
+### Tags de version en cada build
+
+Cada ejecucion publica simultaneamente:
+
+- `vX.Y.Z` (version tomada desde `package.json`)
+- `latest`
+- `${{ github.sha }}`
+
+### Secrets requeridos
+
+Configurar en `Settings > Secrets and variables > Actions`:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `EC2_FRONTEND_HOST`
+- `EC2_FRONTEND_USER`
+- `EC2_FRONTEND_SSH_KEY`
+
+No se almacenan credenciales en texto plano en el repositorio.
