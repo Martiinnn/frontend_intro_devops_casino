@@ -125,59 +125,23 @@ npm start
 
 ---
 
-## Lo que ustedes deben construir (EP2)
+## Despliegue en AWS EKS (Kubernetes) - EA3
 
-1. **`Dockerfile` multi-stage** Angular → Nginx
-   - Stage `builder`: `node:20-alpine`, `npm ci`, `npm run build`.
-   - Stage `runtime`: `nginx:alpine`, copiar `dist/casino-frontend/browser`
-     a `/usr/share/nginx/html`, configurar fallback SPA.
-2. Configurar el `docker-compose.yml` global con los servicios
-   `db`, `casino-backend` y `casino-frontend`, definiendo:
-   - red bridge interna,
-   - puerto 80 expuesto al host (o 8080),
-   - dependencia `depends_on: backend` (o `condition: service_started`).
-3. Workflow `.github/workflows/deploy.yml` (push a rama `deploy`):
-   `build → push (Docker Hub o ECR) → deploy en EC2 vía SSH`.
+Este servicio ha sido desplegado exitosamente en **AWS EKS (Elastic Kubernetes Service)** como parte de la Experiencia de Aprendizaje 3.
 
-Lean la pauta oficial (`EP2_Instrucciones y Pauta_Encargo_Estudiante.pdf`)
-para los criterios completos.
+### Arquitectura de Despliegue
+
+1. **Docker**: Contenerizado mediante un `Dockerfile` multi-stage (Angular builder -> Nginx).
+2. **Registro de Contenedores**: Imagen alojada en **Amazon ECR**.
+3. **CI/CD**: Integración y despliegue continuo configurado con **GitHub Actions** (`.github/workflows/deploy.yml`).
+4. **Kubernetes**: 
+   - Manifiestos de `Deployment` y `Service` (tipo LoadBalancer para acceso externo).
+   - Escalado automático configurado mediante `HorizontalPodAutoscaler` (HPA).
+   - Validado mediante pruebas de carga con Locust.
 
 ---
 
 ## Repositorio del backend
 
-[`casino-backend`](../casino-backend)
+[`casino-backend`](../backend_intro_devops_casino)
 
----
-
-## CI/CD (GitHub Actions) - Rama `deploy`
-
-Este repositorio incluye el workflow:
-
-- `.github/workflows/deploy.yml`
-
-Se ejecuta automaticamente con `push` a la rama `deploy` y sigue 3 etapas:
-
-1. Build de imagen Docker.
-2. Push al registry (Docker Hub).
-3. Deploy automatico en EC2 por SSH.
-
-### Tags de version en cada build
-
-Cada ejecucion publica simultaneamente:
-
-- `vX.Y.Z` (version tomada desde `package.json`)
-- `latest`
-- `${{ github.sha }}`
-
-### Secrets requeridos
-
-Configurar en `Settings > Secrets and variables > Actions`:
-
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
-- `EC2_FRONTEND_HOST`
-- `EC2_FRONTEND_USER`
-- `EC2_FRONTEND_SSH_KEY`
-
-No se almacenan credenciales en texto plano en el repositorio.
