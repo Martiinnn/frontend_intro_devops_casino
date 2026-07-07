@@ -1,147 +1,32 @@
-# casino-frontend
+# Casino Frontend
 
-SPA Angular 17 (standalone components) del **Casino Online** —
-Experiencia 2 de la asignatura **Introducción a Herramientas DevOps (ISY1101)**.
+Frontend del casino online, construido con Angular 17.
 
-> ⚠️ **Este repositorio NO incluye `Dockerfile`, `docker-compose.yml`
-> ni workflows de GitHub Actions.** Esos artefactos forman parte del
-> entregable de la **Evaluación Parcial 2** y deben construirlos los
-> estudiantes.
-
----
-
-## Stack
-
-- Angular 17 (standalone components, signals, lazy routes)
-- TypeScript 5.4
-- HTTP interceptor para JWT
-- Guard de ruta para zonas protegidas
-- Build de producción con la nueva `application` builder de Angular 17
-
----
-
-## Estructura
-
-```
-casino-frontend/
-├── src/
-│   ├── index.html
-│   ├── main.ts
-│   ├── styles.css
-│   ├── environments/
-│   │   ├── environment.ts          ← dev (apiBaseUrl localhost:3000)
-│   │   └── environment.prod.ts     ← cambiar a la IP/dominio del backend EC2
-│   └── app/
-│       ├── app.component.ts        ← shell con <router-outlet>
-│       ├── app.routes.ts           ← rutas con lazy-loading
-│       ├── models/casino.models.ts
-│       ├── services/
-│       │   ├── auth.service.ts     ← login/registro/logout (signals)
-│       │   └── casino.service.ts   ← juegos, perfil, historial
-│       ├── interceptors/auth.interceptor.ts
-│       ├── guards/auth.guard.ts
-│       └── components/
-│           ├── header/
-│           ├── login/   register/
-│           ├── lobby/
-│           ├── slots/   roulette/   blackjack/
-│           ├── profile/  history/
-├── angular.json
-├── package.json
-├── tsconfig.json
-├── tsconfig.app.json
-├── .dockerignore
-└── .gitignore
-```
-
----
-
-## Funcionalidades
-
-### Autenticación
-- Login y registro con email/usuario y contraseña.
-- Token JWT guardado en `localStorage` y enviado por interceptor
-  HTTP en cada petición (`Authorization: Bearer ...`).
-- Guard `authGuard` que redirige a `/login` si no hay sesión.
-- 401 → cierra sesión automáticamente.
-
-### Lobby
-- Lista los juegos activos del catálogo (`GET /api/juegos`).
-- Muestra saldo en vivo, sincronizado con el backend.
-
-### Tragamonedas (slots)
-- 3 rodillos animados.
-- Apuesta entre $10 y $500.
-- Pago en función del símbolo: 50× para 7️⃣, 25× para 💎, etc.
-
-### Ruleta europea
-- Tablero con todos los números (0–36) coloreados.
-- Tipos de apuesta: número (35:1), color (1:1), par/impar (1:1), docena (2:1).
-- Permite acumular varias apuestas antes de girar.
-
-### Blackjack
-- Mano contra la banca, banca pide hasta 17.
-- Acciones: pedir, plantarse, doblar.
-- Sesión persistida en BD (cartas y mazo en JSONB).
-- Pago 3:2 al blackjack natural.
-
-### Perfil e historial
-- Datos del usuario y saldo actual.
-- Botón de "depósito demo" para recargar saldo.
-- Listado paginado de transacciones (apuestas y premios) con saldo posterior.
-
----
-
-## Variables de entorno y configuración
-
-`src/environments/environment.prod.ts` viene con `apiBaseUrl: ''`
-(cadena vacía). Esto es **intencional**: en producción el JS del
-navegador hace llamadas a **rutas relativas** (`/api/...`) que
-aterrizan en el mismo Nginx que sirvió el HTML, y ese Nginx las
-reenvía al backend mediante un **reverse proxy** (`location /api/`
-→ `proxy_pass http://${BACKEND_HOST}:3000/api/`).
-
-> **¿Por qué reverse proxy?** Porque el `Security Group` del backend
-> solo permite tráfico desde el `Security Group` del frontend. Si el
-> navegador del usuario llamara directo al backend, lo bloquearía.
-> Con el reverse proxy el navegador solo habla con el frontend.
-
-`environment.ts` (modo desarrollo local) sí apunta a
-`http://localhost:3000` para que `ng serve` funcione contra un
-backend Node corriendo aparte.
-
----
-
-## Cómo correr en local (sin Docker)
-
-Requisito: backend del casino corriendo en `http://localhost:3000`
-(ver repo `casino-backend`).
-
+## Construir (Build)
+Para instalar las dependencias:
 ```bash
 npm install
-npm start
-# Frontend en http://localhost:4200
+```
+Para construir la aplicación para producción:
+```bash
+npm run build
 ```
 
----
+## Probar (Test)
+Para ejecutar las pruebas unitarias usando Karma/Jasmine:
+```bash
+npm test -- --watch=false --browsers=ChromeHeadless
+```
 
-## Despliegue en AWS EKS (Kubernetes) - EA3
+## Desplegar (Deploy)
+El despliegue está automatizado con GitHub Actions en la rama `deploy`.
+Flujo automatizado: Build -> Test -> Push a ECR -> Deploy a EKS.
 
-Este servicio ha sido desplegado exitosamente en **AWS EKS (Elastic Kubernetes Service)** como parte de la Experiencia de Aprendizaje 3.
+Para despliegue local en Kubernetes:
+```bash
+kubectl apply -f ../k8s/frontend.yaml
+```
 
-### Arquitectura de Despliegue
-
-1. **Docker**: Contenerizado mediante un `Dockerfile` multi-stage (Angular builder -> Nginx).
-2. **Registro de Contenedores**: Imagen alojada en **Amazon ECR**.
-3. **CI/CD**: Integración y despliegue continuo configurado con **GitHub Actions** (`.github/workflows/deploy.yml`).
-4. **Kubernetes**: 
-   - Manifiestos de `Deployment` y `Service` (tipo LoadBalancer para acceso externo).
-   - Escalado automático configurado mediante `HorizontalPodAutoscaler` (HPA).
-   - Validado mediante pruebas de carga con Locust.
-
----
-
-## Repositorio del backend
-
-[`casino-backend`](../backend_intro_devops_casino)
-
+## Troubleshooting
+- **Error 404 o página en blanco**: Asegúrate de que el LoadBalancer está enrutando correctamente el tráfico (`kubectl get svc frontend`).
+- **Fallo en CI/CD**: Verifica la pestaña de GitHub Actions para ver si el test de Karma falló o faltó configuración en `angular.json`.
